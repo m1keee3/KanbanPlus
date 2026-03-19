@@ -1,16 +1,39 @@
 #include <iostream>
+#include "core/BoardService.h"
+#include "src/storage/postgres/BoardStorage.h"
 
-// TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+void RunTest(const BoardService& service) {
+    Board board = service.createBoard("My Board");
+    std::cout << "Created board: " << board.name << " [" << board.id << "]\n";
+
+    auto col  = std::get<Column>(service.addColumn(board.id, "To Do"));
+    auto col2 = std::get<Column>(service.addColumn(board.id, "In Progress"));
+
+    auto card = std::get<Card>(service.addCard(board.id, col.id, "Implement storage", "Use PostgreSQL"));
+    std::ignore = service.moveCard(board.id, card.id, col2.id);
+
+    std::optional<Board> snapshot = service.getBoard(board.id);
+    std::cout << "\n" << board.name << ":\n";
+    for (const Column& column : snapshot->columns) {
+        std::cout << "  [" << column.name << "]\n";
+        for (const Card& c : column.cards)
+            std::cout << "    - " << c.title << "\n";
+    }
+}
+
 int main() {
-    // TIP Press <shortcut actionId="RenameElement"/> when your caret is at the <b>lang</b> variable name to see how CLion can help you rename it.
-    auto lang = "C++";
-    std::cout << "Hello and welcome to " << lang << "!\n";
-
-    for (int i = 1; i <= 5; i++) {
-        // TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        std::cout << "i = " << i << std::endl;
+    const char* connStrEnv = std::getenv("DATABASE_URL");
+    if (!connStrEnv) {
+        std::cerr << "Error: DATABASE_URL environment variable is not set\n";
+        return 1;
     }
 
+    BoardStorage storage{connStrEnv};
+    storage.migrate();
+
+    const BoardService service{storage};
+
+    RunTest(service);
+
     return 0;
-    // TIP See CLion help at <a href="https://www.jetbrains.com/help/clion/">jetbrains.com/help/clion/</a>. Also, you can try interactive lessons for CLion by selecting 'Help | Learn IDE Features' from the main menu.
 }
