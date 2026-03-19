@@ -19,23 +19,23 @@ class BoardService {
 public:
     explicit BoardService(IBoardStorage& storage);
 
-    Board                createBoard(const std::string& name) const;
-    std::optional<Board> getBoard(const std::string& boardId) const;
-    std::vector<Board>   listBoards() const;
+    [[nodiscard]] Board                createBoard(const std::string& name) const;
+    [[nodiscard]] std::optional<Board> getBoard(const std::string& boardId) const;
+    [[nodiscard]] std::vector<Board>   listBoards() const;
 
-    Result<Column>          addColumn(const std::string& boardId, const std::string& name) const;
-    Result<Column>          renameColumn(const std::string& boardId, const std::string& columnId,
+    [[nodiscard]] Result<Column>          addColumn(const std::string& boardId, const std::string& name) const;
+    [[nodiscard]] Result<Column>          renameColumn(const std::string& boardId, const std::string& columnId,
                                          const std::string& newName) const;
-    Result<std::monostate>  removeColumn(const std::string& boardId, const std::string& columnId) const;
+    [[nodiscard]] Result<std::monostate>  removeColumn(const std::string& boardId, const std::string& columnId) const;
 
-    Result<Card>            addCard(const std::string& boardId, const std::string& columnId,
+    [[nodiscard]] Result<Card>            addCard(const std::string& boardId, const std::string& columnId,
                                     const std::string& title, const std::string& description = "") const;
-    Result<Card>            updateCard(const std::string& boardId, const std::string& columnId,
+    [[nodiscard]] Result<Card>            updateCard(const std::string& boardId, const std::string& columnId,
                                        const std::string& cardId, const std::string& title,
                                        const std::string& description) const;
-    Result<std::monostate>  removeCard(const std::string& boardId, const std::string& columnId,
+    [[nodiscard]] Result<std::monostate>  removeCard(const std::string& boardId, const std::string& columnId,
                                        const std::string& cardId) const;
-    Result<std::monostate>  moveCard(const std::string& boardId, const std::string& cardId,
+    [[nodiscard]] Result<std::monostate>  moveCard(const std::string& boardId, const std::string& cardId,
                                      const std::string& toColumnId) const;
 
     using ChangeCallback = std::function<void(const Board&)>;
