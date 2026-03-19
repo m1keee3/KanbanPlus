@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 #include <optional>
-#include <mutex>
 #include <functional>
 #include <variant>
 #include "../models/Board.h"
@@ -43,8 +42,7 @@ public:
     void setOnChange(ChangeCallback cb) { onChange_ = std::move(cb); }
 
 private:
-    IBoardStorage&  storage_;
-    mutable std::mutex mutex_;
+    IBoardStorage& storage_;
     ChangeCallback onChange_;
 
     static std::string generateId();

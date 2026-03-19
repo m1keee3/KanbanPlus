@@ -1,9 +1,5 @@
 #include "BoardService.h"
 #include "../storage/IBoardStorage.h"
-#include <algorithm>
-#include <random>
-#include <sstream>
-#include <iomanip>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -23,7 +19,7 @@ Column* BoardService::findColumn(Board& board, const std::string& columnId) {
 
 Card* BoardService::findCard(Column& column, const std::string& cardId) {
     const auto it = std::ranges::find_if(column.cards,
-                                   [&](const Card& c) { return c.id == cardId; });
+                                         [&](const Card& c) { return c.id == cardId; });
     return it != column.cards.end() ? &(*it) : nullptr;
 }
 
@@ -33,25 +29,20 @@ void BoardService::notifyChange(const Board& board) const {
 
 Board BoardService::createBoard(const std::string& name) const {
     Board board{generateId(), name, {}};
-    {
-        std::lock_guard lock{mutex_};
-        storage_.saveBoard(board);
-    }
+    storage_.saveBoard(board);
+    notifyChange(board);
     return board;
 }
 
 std::optional<Board> BoardService::getBoard(const std::string& boardId) const {
-    std::lock_guard lock{mutex_};
     return storage_.loadBoard(boardId);
 }
 
 std::vector<Board> BoardService::listBoards() const {
-    std::lock_guard lock{mutex_};
     return storage_.loadAll();
 }
 
 Result<Column> BoardService::addColumn(const std::string& boardId, const std::string& name) const {
-    std::lock_guard lock{mutex_};
     std::optional<Board> board = storage_.loadBoard(boardId);
     if (!board) return BoardError::BoardNotFound;
 
@@ -65,7 +56,6 @@ Result<Column> BoardService::addColumn(const std::string& boardId, const std::st
 Result<Column> BoardService::renameColumn(const std::string& boardId,
                                           const std::string& columnId,
                                           const std::string& newName) const {
-    std::lock_guard lock{mutex_};
     std::optional<Board> board = storage_.loadBoard(boardId);
     if (!board) return BoardError::BoardNotFound;
 
@@ -81,12 +71,11 @@ Result<Column> BoardService::renameColumn(const std::string& boardId,
 
 Result<std::monostate> BoardService::removeColumn(const std::string& boardId,
                                                    const std::string& columnId) const {
-    std::lock_guard lock{mutex_};
     std::optional<Board> board = storage_.loadBoard(boardId);
     if (!board) return BoardError::BoardNotFound;
 
     const auto it = std::ranges::find_if(board->columns,
-                                   [&](const Column& c) { return c.id == columnId; });
+                                         [&](const Column& c) { return c.id == columnId; });
     if (it == board->columns.end()) return BoardError::ColumnNotFound;
 
     board->columns.erase(it);
@@ -97,7 +86,6 @@ Result<std::monostate> BoardService::removeColumn(const std::string& boardId,
 
 Result<Card> BoardService::addCard(const std::string& boardId, const std::string& columnId,
                                    const std::string& title, const std::string& description) const {
-    std::lock_guard lock{mutex_};
     std::optional<Board> board = storage_.loadBoard(boardId);
     if (!board) return BoardError::BoardNotFound;
 
@@ -114,7 +102,6 @@ Result<Card> BoardService::addCard(const std::string& boardId, const std::string
 Result<Card> BoardService::updateCard(const std::string& boardId, const std::string& columnId,
                                       const std::string& cardId, const std::string& title,
                                       const std::string& description) const {
-    std::lock_guard lock{mutex_};
     std::optional<Board> board = storage_.loadBoard(boardId);
     if (!board) return BoardError::BoardNotFound;
 
@@ -135,7 +122,6 @@ Result<Card> BoardService::updateCard(const std::string& boardId, const std::str
 Result<std::monostate> BoardService::removeCard(const std::string& boardId,
                                                  const std::string& columnId,
                                                  const std::string& cardId) const {
-    std::lock_guard lock{mutex_};
     std::optional<Board> board = storage_.loadBoard(boardId);
     if (!board) return BoardError::BoardNotFound;
 
@@ -143,7 +129,7 @@ Result<std::monostate> BoardService::removeCard(const std::string& boardId,
     if (!col) return BoardError::ColumnNotFound;
 
     const auto it = std::ranges::find_if(col->cards,
-                                   [&](const Card& c) { return c.id == cardId; });
+                                         [&](const Card& c) { return c.id == cardId; });
     if (it == col->cards.end()) return BoardError::CardNotFound;
 
     col->cards.erase(it);
@@ -155,7 +141,6 @@ Result<std::monostate> BoardService::removeCard(const std::string& boardId,
 Result<std::monostate> BoardService::moveCard(const std::string& boardId,
                                                const std::string& cardId,
                                                const std::string& toColumnId) const {
-    std::lock_guard lock{mutex_};
     std::optional<Board> board = storage_.loadBoard(boardId);
     if (!board) return BoardError::BoardNotFound;
 
