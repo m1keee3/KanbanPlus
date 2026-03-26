@@ -1,0 +1,10 @@
+{
+  "name": "kanbanplus",
+  "version": "0.1.0",
+  "dependencies": [
+    "boost-asio",
+    "boost-uuid",
+    "libpqxx",
+    "gtest"
+  ]
+}
