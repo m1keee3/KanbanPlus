@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Boost REQUIRED COMPONENTS
         uuid
-        system)
+        system
+        json)
 find_package(libpqxx CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 
@@ -14,15 +15,24 @@ set(SERVICE_SOURCES
     src/core/BoardService.cpp
 )
 
+set(SERVER_SOURCES
+    src/server/Server.cpp
+    src/server/session/Session.cpp
+    src/server/session/SessionManager.cpp
+    src/server/handlers/MessageHandler.cpp
+)
+
 add_executable(KanbanPlus
     main.cpp
     ${SERVICE_SOURCES}
-        src/storage/postgres/BoardStorage.cpp
+    ${SERVER_SOURCES}
+    src/storage/postgres/BoardStorage.cpp
 )
 target_include_directories(KanbanPlus PRIVATE src)
 target_link_libraries(KanbanPlus PRIVATE
     Boost::uuid
     Boost::system
+    Boost::json
     libpqxx::pqxx
 )
 
