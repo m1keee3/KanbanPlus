@@ -9,18 +9,28 @@
 
 namespace asio = boost::asio;
 
-Server::Server(asio::io_context& ioc, BoardService& service, unsigned short port)
+Server::Server(asio::io_context& ioc, BoardService& service, unsigned short port,
+               const std::chrono::seconds idleTimeout)
     : ioc_(ioc)
     , acceptor_(asio::make_strand(ioc), {asio::ip::tcp::v4(), port})
     , service_(service)
+    , idleTimeout_(idleTimeout)
 {
     service_.setOnChange([this](const Board& board) {
         sessions_.broadcast(board.id, Serializer::boardEvent(board));
     });
 }
 
-void Server::run(const int threadCount) {
+unsigned short Server::port() const {
+    return acceptor_.local_endpoint().port();
+}
+
+void Server::start() {
     doAccept();
+}
+
+void Server::run(const int threadCount) {
+    start();
 
     std::vector<std::thread> threads;
     threads.reserve(threadCount - 1);
@@ -28,8 +38,7 @@ void Server::run(const int threadCount) {
         threads.emplace_back([this] { ioc_.run(); });
 
     std::cout << "KanbanPlus listening on port "
-              << acceptor_.local_endpoint().port()
-              << " (" << threadCount << " threads)\n";
+              << port() << " (" << threadCount << " threads)\n";
 
     ioc_.run();
 
@@ -42,7 +51,7 @@ void Server::doAccept() {
         asio::make_strand(ioc_),
         [this](const boost::beast::error_code &ec, asio::ip::tcp::socket socket) {
             if (!ec)
-                std::make_shared<Session>(std::move(socket), service_, sessions_)->run();
+                std::make_shared<Session>(std::move(socket), service_, sessions_, idleTimeout_)->run();
             else
                 std::cerr << "accept: " << ec.message() << "\n";
             doAccept();

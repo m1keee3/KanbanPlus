@@ -47,5 +47,20 @@ target_link_libraries(KanbanPlusTests PRIVATE
     GTest::gtest_main
 )
 
+add_executable(ServerTests
+    tests/ServerTests.cpp
+    ${SERVICE_SOURCES}
+    ${SERVER_SOURCES}
+    src/storage/inmemory/BoardStorage.cpp
+)
+target_include_directories(ServerTests PRIVATE src)
+target_link_libraries(ServerTests PRIVATE
+    Boost::uuid
+    Boost::system
+    Boost::json
+    GTest::gtest_main
+)
+
 enable_testing()
 add_test(NAME BoardServiceTests COMMAND KanbanPlusTests)
+add_test(NAME ServerTests       COMMAND ServerTests)

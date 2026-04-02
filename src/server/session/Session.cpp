@@ -9,18 +9,19 @@ namespace websocket = beast::websocket;
 
 Session::Session(boost::asio::ip::tcp::socket socket,
                  BoardService& service,
-                 SessionManager& sessions)
+                 SessionManager& sessions,
+                 const std::chrono::seconds idleTimeout)
     : ws_(std::move(socket))
     , service_(service)
     , sessions_(sessions)
+    , idleTimeout_(idleTimeout)
 {}
 
-Session::~Session() {
-    leaveBoard();
-}
-
 void Session::run() {
-    ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
+    auto timeout = websocket::stream_base::timeout::suggested(beast::role_type::server);
+    if (idleTimeout_.count() > 0)
+        timeout.idle_timeout = idleTimeout_;
+    ws_.set_option(timeout);
     ws_.set_option(websocket::stream_base::decorator([](websocket::response_type& res) {
         res.set(beast::http::field::server, "KanbanPlus");
     }));
@@ -41,7 +42,10 @@ void Session::doRead() {
 }
 
 void Session::onRead(const beast::error_code &ec, std::size_t) {
-    if (ec == websocket::error::closed) return;
+    if (ec == websocket::error::closed) {
+        leaveBoard();
+        return;
+    }
     if (ec) {
         std::cerr << "read: " << ec.message() << "\n";
         return;
@@ -61,7 +65,7 @@ void Session::handleMessage(const std::string_view text) {
         send(Serializer::errorResponse("invalid_json"));
         return;
     }
-    MessageHandler handler{service_, sessions_};
+    const MessageHandler handler{service_, sessions_};
     send(handler.handle(val.as_object(), *this));
 }
 

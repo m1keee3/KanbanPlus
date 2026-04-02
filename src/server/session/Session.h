@@ -3,6 +3,7 @@
 #include <string>
 #include <deque>
 #include <mutex>
+#include <chrono>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -14,8 +15,8 @@ class Session : public std::enable_shared_from_this<Session> {
 public:
     Session(boost::asio::ip::tcp::socket socket,
             BoardService& service,
-            SessionManager& sessions);
-    ~Session();
+            SessionManager& sessions,
+            std::chrono::seconds idleTimeout = std::chrono::seconds{0});
 
     void run();
 
@@ -35,9 +36,10 @@ private:
     boost::beast::websocket::stream<boost::beast::tcp_stream> ws_;
     boost::beast::flat_buffer readBuffer_;
 
-    BoardService&   service_;
-    SessionManager& sessions_;
-    std::string     boardId_;
+    BoardService&        service_;
+    SessionManager&      sessions_;
+    std::string          boardId_;
+    std::chrono::seconds idleTimeout_;
 
     std::mutex              writeMutex_;
     std::deque<std::string> writeQueue_;
